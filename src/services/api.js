@@ -1,3 +1,4 @@
+// src/services/api.js
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -29,7 +30,10 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/admin';
+      // Only redirect if we're not already on admin page
+      if (window.location.pathname !== '/admin') {
+        window.location.href = '/admin';
+      }
     }
     return Promise.reject(error);
   }
@@ -64,6 +68,7 @@ export const complaintsAPI = {
   getById: (id) => api.get(`/complaints/${id}`),
   update: (id, data) => api.put(`/complaints/${id}`, data),
   getStats: () => api.get('/complaints/stats/overview'),
+  getRecent: () => api.get('/complaints/recent/public'), // ✅ New endpoint
 };
 
 // Gallery API

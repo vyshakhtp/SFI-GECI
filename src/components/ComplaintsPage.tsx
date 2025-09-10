@@ -1,8 +1,22 @@
+// src/components/ComplaintsPage.tsx
 import React, { useState } from 'react';
-import { MessageSquare, Send, AlertCircle, CheckCircle, Clock, User, Calendar } from 'lucide-react';
+import { MessageSquare, Send, AlertCircle, CheckCircle, Clock, Calendar, Loader } from 'lucide-react';
+import { complaintsAPI } from '../services/api.js';
+
+interface ComplaintFormData {
+  name: string;
+  studentId: string;
+  email: string;
+  department: string;
+  semester: string;
+  category: string;
+  subject: string;
+  description: string;
+  isAnonymous: boolean;
+}
 
 const ComplaintsPage = () => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ComplaintFormData>({
     name: '',
     studentId: '',
     email: '',
@@ -11,10 +25,13 @@ const ComplaintsPage = () => {
     category: '',
     subject: '',
     description: '',
-    anonymous: false
+    isAnonymous: false
   });
 
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [complaintId, setComplaintId] = useState('');
 
   const categories = [
     'Academic Issues',
@@ -48,15 +65,59 @@ const ComplaintsPage = () => {
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
     }));
+    // Clear error when user starts typing
+    if (error) setError('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Here you would typically send the data to your backend
-    console.log('Complaint submitted:', formData);
-    setIsSubmitted(true);
+  const validateForm = (): string | null => {
+    if (!formData.department) return 'Department is required';
+    if (!formData.semester) return 'Semester is required';
+    if (!formData.category) return 'Category is required';
+    if (!formData.subject.trim()) return 'Subject is required';
+    if (formData.subject.trim().length < 5) return 'Subject must be at least 5 characters long';
+    if (!formData.description.trim()) return 'Description is required';
+    if (formData.description.trim().length < 20) return 'Description must be at least 20 characters long';
+    
+    if (!formData.isAnonymous) {
+      if (!formData.name.trim()) return 'Name is required for non-anonymous complaints';
+      if (!formData.studentId.trim()) return 'Student ID is required for non-anonymous complaints';
+      if (!formData.email.trim()) return 'Email is required for non-anonymous complaints';
+      
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) return 'Please enter a valid email address';
+    }
+    
+    return null;
   };
 
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  const validationError = validateForm();
+  if (validationError) {
+    setError(validationError);
+    return;
+  }
+
+  setIsSubmitting(true);
+  setError('');
+
+  try {
+    // ✅ FIXED: Use complaintsAPI.submit instead of complaintsAPI.submitComplaint
+    const response = await complaintsAPI.submit(formData);
+    
+    if (response.data.complaintId) {
+      setComplaintId(response.data.complaintId);
+      setIsSubmitted(true);
+    }
+  } catch (err: any) {
+    console.error('Error submitting complaint:', err);
+    setError(err.response?.data?.message || 'Failed to submit complaint. Please try again later.');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
   const recentComplaints = [
     {
       id: 1,
@@ -86,7 +147,7 @@ const ComplaintsPage = () => {
 
   if (isSubmitted) {
     return (
-      <div className="py-16">
+      <div className="min-h-screen py-16 bg-gray-50">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-xl shadow-lg p-8 text-center">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -97,16 +158,10 @@ const ComplaintsPage = () => {
               Thank you for bringing this to our attention. We have received your complaint and it will be reviewed by our team within 24-48 hours.
             </p>
             <div className="bg-blue-50 rounded-lg p-4 mb-6">
-              <p className="text-blue-800 font-medium">Complaint ID: #SFI2024{Math.floor(Math.random() * 1000)}</p>
+              <p className="text-blue-800 font-medium">Complaint ID: #{complaintId}</p>
               <p className="text-blue-600 text-sm mt-1">Save this ID for future reference</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
-                onClick={() => setIsSubmitted(false)}
-                className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors duration-200"
-              >
-                Submit Another Complaint
-              </button>
               <button
                 onClick={() => {
                   setIsSubmitted(false);
@@ -119,9 +174,15 @@ const ComplaintsPage = () => {
                     category: '',
                     subject: '',
                     description: '',
-                    anonymous: false
+                    isAnonymous: false
                   });
                 }}
+                className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors duration-200"
+              >
+                Submit Another Complaint
+              </button>
+              <button
+                onClick={() => window.location.href = '/'}
                 className="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors duration-200"
               >
                 Go Back to Home
@@ -134,7 +195,7 @@ const ComplaintsPage = () => {
   }
 
   return (
-    <div className="py-8">
+    <div className="min-h-screen py-8 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
@@ -153,6 +214,13 @@ const ComplaintsPage = () => {
                 <h2 className="text-2xl font-bold text-gray-900">Complaint Form</h2>
               </div>
 
+              {error && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 flex items-center">
+                  <AlertCircle className="mr-2" size={20} />
+                  {error}
+                </div>
+              )}
+
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Personal Information */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -165,9 +233,10 @@ const ComplaintsPage = () => {
                       name="name"
                       value={formData.name}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
-                      required={!formData.anonymous}
-                      disabled={formData.anonymous}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
+                      required={!formData.isAnonymous}
+                      disabled={formData.isAnonymous}
+                      placeholder="Enter your full name"
                     />
                   </div>
                   <div>
@@ -179,9 +248,10 @@ const ComplaintsPage = () => {
                       name="studentId"
                       value={formData.studentId}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
-                      required={!formData.anonymous}
-                      disabled={formData.anonymous}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
+                      required={!formData.isAnonymous}
+                      disabled={formData.isAnonymous}
+                      placeholder="Enter your student ID"
                     />
                   </div>
                 </div>
@@ -196,9 +266,10 @@ const ComplaintsPage = () => {
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
-                      required={!formData.anonymous}
-                      disabled={formData.anonymous}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
+                      required={!formData.isAnonymous}
+                      disabled={formData.isAnonymous}
+                      placeholder="Enter your email address"
                     />
                   </div>
                   <div>
@@ -209,7 +280,7 @@ const ComplaintsPage = () => {
                       name="department"
                       value={formData.department}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
                       required
                     >
                       <option value="">Select Department</option>
@@ -229,7 +300,7 @@ const ComplaintsPage = () => {
                       name="semester"
                       value={formData.semester}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
                       required
                     >
                       <option value="">Select Semester</option>
@@ -246,7 +317,7 @@ const ComplaintsPage = () => {
                       name="category"
                       value={formData.category}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
                       required
                     >
                       <option value="">Select Category</option>
@@ -267,7 +338,7 @@ const ComplaintsPage = () => {
                     value={formData.subject}
                     onChange={handleChange}
                     placeholder="Brief description of your complaint"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors"
                     required
                   />
                 </div>
@@ -282,7 +353,7 @@ const ComplaintsPage = () => {
                     onChange={handleChange}
                     rows={6}
                     placeholder="Please provide detailed information about your complaint..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none resize-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none resize-none transition-colors"
                     required
                   ></textarea>
                 </div>
@@ -291,23 +362,33 @@ const ComplaintsPage = () => {
                 <div className="flex items-center space-x-3">
                   <input
                     type="checkbox"
-                    name="anonymous"
-                    id="anonymous"
-                    checked={formData.anonymous}
+                    name="isAnonymous"
+                    id="isAnonymous"
+                    checked={formData.isAnonymous}
                     onChange={handleChange}
                     className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
                   />
-                  <label htmlFor="anonymous" className="text-sm text-gray-700">
+                  <label htmlFor="isAnonymous" className="text-sm text-gray-700">
                     Submit this complaint anonymously
                   </label>
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full bg-red-600 text-white py-3 px-6 rounded-lg hover:bg-red-700 transition-colors duration-200 flex items-center justify-center space-x-2"
+                  disabled={isSubmitting}
+                  className="w-full bg-red-600 text-white py-3 px-6 rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center space-x-2"
                 >
-                  <Send size={20} />
-                  <span>Submit Complaint</span>
+                  {isSubmitting ? (
+                    <>
+                      <Loader className="animate-spin" size={20} />
+                      <span>Submitting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send size={20} />
+                      <span>Submit Complaint</span>
+                    </>
+                  )}
                 </button>
               </form>
             </div>
