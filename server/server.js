@@ -21,19 +21,22 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 // app.use(helmet());
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173', // ✅ fixed fallback
+  origin: process.env.CLIENT_URL || 'http://localhost:5173', // ✅ fallback for dev
   credentials: true
 }));
 
+
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100
 });
 app.use(limiter);
 
+// ✅ Body parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Static uploads
 app.use('/uploads', express.static('uploads'));
 
 // MongoDB connection
@@ -44,7 +47,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/sfi_websi
 .then(() => console.log('✅ MongoDB connected successfully'))
 .catch(err => console.error('❌ MongoDB connection error:', err));
 
-//Routes
+// ✅ Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/complaints', complaintsRoutes);
@@ -66,11 +69,12 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler (✅ Express 5 compatible)
+// 404 handler
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
+// Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });

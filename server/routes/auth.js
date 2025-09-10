@@ -9,7 +9,9 @@ const router = express.Router();
 // Login
 router.post('/login', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    // ✅ Safely destructure, even if req.body is undefined
+    const { username, password } = req.body || {};
+    console.log('Login request body:', req.body);
 
     if (!username || !password) {
       return res.status(400).json({ message: 'Username and password are required' });
@@ -71,7 +73,11 @@ router.post('/logout', auth, async (req, res) => {
 // Create admin user
 router.post('/create-admin', async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password } = req.body || {};
+
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
 
     const existingAdmin = await User.findOne({ role: 'admin' });
     if (existingAdmin) {

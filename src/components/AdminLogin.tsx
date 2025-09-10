@@ -14,23 +14,38 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
+// AdminLogin.tsx
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError('');
+  setIsLoading(true);
 
-    // Simulate authentication
-    await new Promise(resolve => setTimeout(resolve, 1000));
+  try {
+    const res = await fetch("http://localhost:5000/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(credentials),
+    });
 
-    // Demo credentials - in a real app, this would be handled by your backend
-    if (credentials.username === 'admin' && credentials.password === 'sfi2024') {
-      onLogin();
-    } else {
-      setError('Invalid username or password');
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.message || "Login failed");
     }
-    
+
+    // ✅ Save token & user info
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
+
+    // ✅ Tell App we're logged in
+    onLogin();
+  } catch (err: any) {
+    setError(err.message);
+  } finally {
     setIsLoading(false);
-  };
+  }
+};
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCredentials(prev => ({
