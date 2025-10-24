@@ -15,6 +15,8 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
 
 // AdminLogin.tsx
+// In AdminLogin.tsx - update the handleSubmit function
+// In AdminLogin.tsx - make sure this part is correct
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
   setError('');
@@ -33,7 +35,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       throw new Error(data.message || "Login failed");
     }
 
-    // ✅ Save token & user info
+    // ✅ Save token & user info to localStorage
     localStorage.setItem("token", data.token);
     localStorage.setItem("user", JSON.stringify(data.user));
 
@@ -45,8 +47,6 @@ const handleSubmit = async (e: React.FormEvent) => {
     setIsLoading(false);
   }
 };
-
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCredentials(prev => ({
       ...prev,

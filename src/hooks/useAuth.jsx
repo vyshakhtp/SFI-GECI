@@ -14,8 +14,9 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [token, setToken] = useState(null);
 
+  // ✅ Initialize auth state from localStorage on app start
   useEffect(() => {
     const initAuth = async () => {
       const storedToken = localStorage.getItem('token');
@@ -26,7 +27,7 @@ export const AuthProvider = ({ children }) => {
           setToken(storedToken);
           setUser(JSON.parse(storedUser));
           
-          // Verify token is still valid
+          // Verify token is still valid with backend
           await authAPI.getProfile();
         } catch (error) {
           console.error('Token validation failed:', error);
@@ -47,6 +48,7 @@ export const AuthProvider = ({ children }) => {
       setToken(newToken);
       setUser(userData);
       
+      // ✅ Persist to localStorage
       localStorage.setItem('token', newToken);
       localStorage.setItem('user', JSON.stringify(userData));
 
@@ -68,11 +70,25 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      // ✅ Clear all auth data
       setToken(null);
       setUser(null);
       localStorage.removeItem('token');
       localStorage.removeItem('user');
     }
+  };
+
+  // ✅ Simple login for AdminLogin component (without credentials)
+  const simpleLogin = () => {
+    const storedToken = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    
+    if (storedToken && storedUser) {
+      setToken(storedToken);
+      setUser(JSON.parse(storedUser));
+      return true;
+    }
+    return false;
   };
 
   const value = {
@@ -81,6 +97,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     logout,
+    simpleLogin,
     isAuthenticated: !!token && !!user,
     isAdmin: user?.role === 'admin' || user?.role === 'moderator'
   };

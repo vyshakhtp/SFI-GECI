@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Home, FileText, MessageSquare, Image, Users, Settings, Menu, X } from 'lucide-react';
 import HomePage from './components/HomePage';
 import NotesPage from './components/NotesPage';
@@ -14,8 +14,43 @@ type Page = 'home' | 'notes' | 'complaints' | 'gallery' | 'members' | 'admin';
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isAuthenticated, login, logout, loading, simpleLogin } = useAuth();
 
-  const { isAuthenticated, login, logout } = useAuth();
+  // ✅ Auto-redirect to admin dashboard after login and handle refresh
+  useEffect(() => {
+    if (!loading && isAuthenticated && currentPage === 'admin') {
+      // User is authenticated and on admin page - show dashboard
+    } else if (!loading && isAuthenticated && currentPage !== 'admin') {
+      // User is authenticated but not on admin page - redirect to admin
+      setCurrentPage('admin');
+    } else if (!loading && !isAuthenticated && currentPage === 'admin') {
+      // User is not authenticated but on admin page - show login
+    }
+  }, [isAuthenticated, currentPage, loading]);
+
+  // ✅ Handle login success
+  const handleLoginSuccess = () => {
+    simpleLogin(); // This will set auth state from localStorage
+    setCurrentPage('admin');
+  };
+
+  // ✅ Handle logout
+  const handleLogout = () => {
+    logout();
+    setCurrentPage('home');
+  };
+
+  // ✅ Show loading spinner while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   // ✅ navigation buttons
   const navigation = [
@@ -37,8 +72,8 @@ function App() {
       case 'members': return <MembersPage />;
       case 'admin':
         return isAuthenticated
-          ? <AdminDashboard onLogout={logout} />
-          : <AdminLogin onLogin={login} />;
+          ? <AdminDashboard onLogout={handleLogout} />
+          : <AdminLogin onLogin={handleLoginSuccess} />;
       default: return <HomePage />;
     }
   };
@@ -68,11 +103,7 @@ function App() {
                 <button
                   key={item.id}
                   onClick={() => {
-                    if (item.id === 'admin') {
-                      setCurrentPage('admin');
-                    } else {
-                      setCurrentPage(item.id as Page);
-                    }
+                    setCurrentPage(item.id as Page);
                     setIsMenuOpen(false);
                   }}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors duration-200 ${
@@ -86,6 +117,15 @@ function App() {
                 </button>
               ))}
             </nav>
+
+            {/* Show user info if authenticated */}
+            {isAuthenticated && (
+              <div className="hidden md:flex items-center space-x-4">
+                <span className="text-red-100 text-sm">
+                  Welcome, {JSON.parse(localStorage.getItem('user') || '{}').username}
+                </span>
+              </div>
+            )}
 
             {/* Mobile Nav Toggle */}
             <button
