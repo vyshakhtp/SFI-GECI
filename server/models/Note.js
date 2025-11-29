@@ -15,7 +15,8 @@ const noteSchema = new mongoose.Schema({
   semester: {
     type: String,
     required: true,
-    enum: ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th']
+    // Accept both numeric and text semesters
+    enum: ['1', '2', '3', '4', '5', '6', '7', '8', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th']
   },
   department: {
     type: String,
@@ -25,7 +26,8 @@ const noteSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['Complete Notes', 'Chapter Notes', 'Quick Reference', 'Previous Papers', 'Summary Notes']
+    // Accept both 'notes' and other types
+    enum: ['notes', 'Complete Notes', 'Chapter Notes', 'Quick Reference', 'Previous Papers', 'Summary Notes']
   },
   description: {
     type: String,

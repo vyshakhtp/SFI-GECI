@@ -90,6 +90,10 @@ export const notesAPI = {
   search: (query, params = {}) => api.get('/notes/search', {
     params: { q: query, ...params }
   }),
+  // Add to notesAPI in api.js
+view: (id) => api.get(`/notes/${id}/view`, { 
+  responseType: 'blob' 
+}),
   
   // Get metadata for filters
   getSubjects: () => api.get('/notes/meta/subjects'),

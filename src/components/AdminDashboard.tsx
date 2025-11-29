@@ -95,6 +95,40 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     fetchNotes(); // Refresh the notes list
   };
 
+  const handleViewNote = (noteId: string) => {
+  // Open PDF in new tab
+  window.open(`http://localhost:5000/api/notes/${noteId}/view`, '_blank');
+};
+
+const handleDeleteNote = async (noteId: string) => {
+  if (!window.confirm('Are you sure you want to delete this note? This action cannot be undone.')) {
+    return;
+  }
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`http://localhost:5000/api/notes/${noteId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (response.ok) {
+      // Remove note from state
+      setNotes(prevNotes => prevNotes.filter(note => note._id !== noteId));
+      alert('Note deleted successfully');
+    } else {
+      const errorData = await response.json();
+      alert('Failed to delete note: ' + (errorData.message || 'Unknown error'));
+    }
+  } catch (error) {
+    console.error('Error deleting note:', error);
+    alert('Error deleting note. Please try again.');
+  }
+};
+
   // Filter notes based on search and filters
   const filteredNotes = notes.filter(note => {
     const matchesSearch = note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -266,6 +300,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                           href={`http://localhost:5000${note.fileUrl}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
+                          onClick={() => handleViewNote(note._id)}
                           className="text-blue-600 hover:text-blue-900"
                           title="View Note"
                         >
@@ -274,6 +309,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                         <a
                           href={`http://localhost:5000/api/notes/${note._id}/download`}
                           className="text-green-600 hover:text-green-900"
+                        
                           title="Download Note"
                         >
                           <Download size={16} />
@@ -281,6 +317,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                         <button 
                           className="text-red-600 hover:text-red-900"
                           title="Delete Note"
+                          onClick={() => handleDeleteNote(note._id)}
                         >
                           <Trash2 size={16} />
                         </button>
