@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Home, FileText, MessageSquare, Image, Users, Settings, Menu, X } from 'lucide-react';
 import HomePage from './components/HomePage';
 import NotesPage from './components/NotesPage';
@@ -14,27 +14,22 @@ type Page = 'home' | 'notes' | 'complaints' | 'gallery' | 'members' | 'admin';
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, login, logout, loading, isAuthenticated, simpleLogin } = useAuth();
+  const { user, logout, loading, isAuthenticated } = useAuth();
 
-  console.log(useAuth);
-  
 
-  // Handle page changes and authentication state
-  useEffect(() => {
-    // If user is authenticated and on admin login page, redirect to dashboard
-    if (isAuthenticated && currentPage === 'admin') {
-      // Already on correct page
-    }
-  }, [isAuthenticated, currentPage]);
 
-  // Handle login success from AdminLogin component
+  // Handle login success - SIMPLIFIED
   const handleLoginSuccess = () => {
-    // This is called after successful login in AdminLogin
-    // The auth state should already be updated via localStorage
-    setCurrentPage('admin');
+    // Force a re-render by updating state
+    setTimeout(() => {
+      // If still not showing dashboard, force redirect
+      if (isAuthenticated && currentPage !== 'admin') {
+        setCurrentPage('admin');
+      }
+    }, 100);
   };
 
-  // Handle logout from AdminDashboard
+  // Handle logout
   const handleLogout = async () => {
     await logout();
     setCurrentPage('home');
@@ -46,7 +41,7 @@ function App() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">Checking authentication...</p>
         </div>
       </div>
     );
@@ -76,9 +71,11 @@ function App() {
       case 'members': 
         return <MembersPage />;
       case 'admin':
-        return isAuthenticated 
-          ? <AdminDashboard onLogout={handleLogout} />
-          : <AdminLogin onLogin={handleLoginSuccess} />;
+        if (isAuthenticated) {
+          return <AdminDashboard onLogout={handleLogout} />;
+        } else {
+          return <AdminLogin onLogin={handleLoginSuccess} />;
+        }
       default: 
         return <HomePage />;
     }
@@ -128,7 +125,7 @@ function App() {
             {isAuthenticated && user && (
               <div className="hidden md:flex items-center space-x-4">
                 <span className="text-red-100 text-sm">
-                  Welcome, {user.username}
+                  Welcome, {user.username} ({user.role})
                 </span>
               </div>
             )}
