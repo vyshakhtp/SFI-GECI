@@ -7,6 +7,67 @@ import { auth } from '../middleware/auth.js';
 const router = express.Router();
 ///for delete
 // Add this route to your auth.js to create an admin user
+router.post('/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    console.log('Login attempt for:', username);
+
+    if (!username || !password) {
+      return res.status(400).json({ 
+        message: 'Username and password are required'
+      });
+    }
+
+    // Find user by username or email
+    const user = await User.findOne({ 
+      $or: [{ username }, { email: username }],
+      isActive: true 
+    });
+
+    if (!user) {
+      console.log('User not found:', username);
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Check password
+    const isPasswordValid = await user.comparePassword(password);
+    if (!isPasswordValid) {
+      console.log('Invalid password for user:', username);
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save();
+
+    // Generate token
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '24h' }
+    );
+
+    console.log('Login successful for:', username);
+    
+    res.json({
+      message: 'Login successful',
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Server error during login' });
+  }
+});
+
+
+
 router.post('/create-admin', async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -49,68 +110,9 @@ router.post('/create-admin', async (req, res) => {
   }
 });
 
-// Login
-// server/routes/auth.js - update the login route
-router.post('/login', async (req, res) => {
-  try {
-    // ✅ Better request body handling
-    const { username, password } = req.body;
-    
-    console.log('Login attempt - Username:', username);
-    console.log('Login attempt - Password length:', password ? password.length : 0);
-    console.log('Full request body:', req.body);
 
-    if (!username || !password) {
-      console.log('Missing credentials - username:', !!username, 'password:', !!password);
-      return res.status(400).json({ 
-        message: 'Username and password are required',
-        received: { username: !!username, password: !!password }
-      });
-    }
 
-    const user = await User.findOne({ 
-      $or: [{ username }, { email: username }],
-      isActive: true 
-    });
 
-    if (!user) {
-      console.log('User not found for:', username);
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    const isPasswordValid = await user.comparePassword(password);
-    if (!isPasswordValid) {
-      console.log('Invalid password for user:', username);
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    // Update last login
-    user.lastLogin = new Date();
-    await user.save();
-
-    const token = jwt.sign(
-      { userId: user._id, role: user.role },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '24h' }
-    );
-
-    console.log('Login successful for user:', username);
-    
-    res.json({
-      message: 'Login successful',
-      token,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        role: user.role
-      }
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error during login' });
-  }
-});
 // Get current user
 router.get('/me', auth, async (req, res) => {
   try {

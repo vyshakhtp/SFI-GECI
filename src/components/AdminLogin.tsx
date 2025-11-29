@@ -23,6 +23,8 @@ const handleSubmit = async (e: React.FormEvent) => {
   setIsLoading(true);
 
   try {
+    console.log('🔄 Attempting login with:', credentials);
+    
     const res = await fetch("http://localhost:5000/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -30,6 +32,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     });
 
     const data = await res.json();
+    console.log('📨 Login response:', data);
 
     if (!res.ok) {
       throw new Error(data.message || "Login failed");
@@ -38,10 +41,14 @@ const handleSubmit = async (e: React.FormEvent) => {
     // ✅ Save token & user info to localStorage
     localStorage.setItem("token", data.token);
     localStorage.setItem("user", JSON.stringify(data.user));
+    
+    console.log('✅ Login successful, token saved:', data.token);
+    console.log('✅ User data saved:', data.user);
 
     // ✅ Tell App we're logged in
     onLogin();
   } catch (err: any) {
+    console.error('❌ Login error:', err);
     setError(err.message);
   } finally {
     setIsLoading(false);

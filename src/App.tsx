@@ -14,33 +14,33 @@ type Page = 'home' | 'notes' | 'complaints' | 'gallery' | 'members' | 'admin';
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { isAuthenticated, login, logout, loading, simpleLogin } = useAuth();
+  const { user, login, logout, loading, isAuthenticated, simpleLogin } = useAuth();
 
-  // ✅ Auto-redirect to admin dashboard after login and handle refresh
+  console.log(useAuth);
+  
+
+  // Handle page changes and authentication state
   useEffect(() => {
-    if (!loading && isAuthenticated && currentPage === 'admin') {
-      // User is authenticated and on admin page - show dashboard
-    } else if (!loading && isAuthenticated && currentPage !== 'admin') {
-      // User is authenticated but not on admin page - redirect to admin
-      setCurrentPage('admin');
-    } else if (!loading && !isAuthenticated && currentPage === 'admin') {
-      // User is not authenticated but on admin page - show login
+    // If user is authenticated and on admin login page, redirect to dashboard
+    if (isAuthenticated && currentPage === 'admin') {
+      // Already on correct page
     }
-  }, [isAuthenticated, currentPage, loading]);
+  }, [isAuthenticated, currentPage]);
 
-  // ✅ Handle login success
+  // Handle login success from AdminLogin component
   const handleLoginSuccess = () => {
-    simpleLogin(); // This will set auth state from localStorage
+    // This is called after successful login in AdminLogin
+    // The auth state should already be updated via localStorage
     setCurrentPage('admin');
   };
 
-  // ✅ Handle logout
-  const handleLogout = () => {
-    logout();
+  // Handle logout from AdminDashboard
+  const handleLogout = async () => {
+    await logout();
     setCurrentPage('home');
   };
 
-  // ✅ Show loading spinner while checking authentication
+  // Show loading spinner while checking authentication
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -52,29 +52,35 @@ function App() {
     );
   }
 
-  // ✅ navigation buttons
+  // Navigation buttons
   const navigation = [
-    { id: 'home', label: 'Home', icon: Home },
-    { id: 'notes', label: 'Notes', icon: FileText },
-    { id: 'complaints', label: 'Complaints', icon: MessageSquare },
-    { id: 'gallery', label: 'Gallery', icon: Image },
-    { id: 'members', label: 'Members', icon: Users },
-    { id: 'admin', label: 'Admin', icon: Settings },
+    { id: 'home' as Page, label: 'Home', icon: Home },
+    { id: 'notes' as Page, label: 'Notes', icon: FileText },
+    { id: 'complaints' as Page, label: 'Complaints', icon: MessageSquare },
+    { id: 'gallery' as Page, label: 'Gallery', icon: Image },
+    { id: 'members' as Page, label: 'Members', icon: Users },
+    { id: 'admin' as Page, label: isAuthenticated ? 'Dashboard' : 'Admin', icon: Settings },
   ];
 
-  // ✅ render the current page
+  // Render the current page
   const renderCurrentPage = () => {
     switch (currentPage) {
-      case 'home': return <HomePage />;
-      case 'notes': return <NotesPage />;
-      case 'complaints': return <ComplaintsPage />;
-      case 'gallery': return <GalleryPage />;
-      case 'members': return <MembersPage />;
+      case 'home': 
+        return <HomePage />;
+      case 'notes': 
+        return <NotesPage />;
+      case 'complaints': 
+        return <ComplaintsPage />;
+      case 'gallery': 
+        return <GalleryPage />;
+      case 'members': 
+        return <MembersPage />;
       case 'admin':
-        return isAuthenticated
+        return isAuthenticated 
           ? <AdminDashboard onLogout={handleLogout} />
           : <AdminLogin onLogin={handleLoginSuccess} />;
-      default: return <HomePage />;
+      default: 
+        return <HomePage />;
     }
   };
 
@@ -103,7 +109,7 @@ function App() {
                 <button
                   key={item.id}
                   onClick={() => {
-                    setCurrentPage(item.id as Page);
+                    setCurrentPage(item.id);
                     setIsMenuOpen(false);
                   }}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors duration-200 ${
@@ -119,10 +125,10 @@ function App() {
             </nav>
 
             {/* Show user info if authenticated */}
-            {isAuthenticated && (
+            {isAuthenticated && user && (
               <div className="hidden md:flex items-center space-x-4">
                 <span className="text-red-100 text-sm">
-                  Welcome, {JSON.parse(localStorage.getItem('user') || '{}').username}
+                  Welcome, {user.username}
                 </span>
               </div>
             )}
@@ -143,7 +149,10 @@ function App() {
                 {navigation.map((item) => (
                   <button
                     key={item.id}
-                    onClick={() => { setCurrentPage(item.id as Page); setIsMenuOpen(false); }}
+                    onClick={() => { 
+                      setCurrentPage(item.id); 
+                      setIsMenuOpen(false); 
+                    }}
                     className={`flex items-center space-x-3 px-6 py-3 border-b border-red-500 transition-colors duration-200 ${
                       currentPage === item.id
                         ? 'bg-red-700 text-white'
@@ -160,7 +169,7 @@ function App() {
         </div>
       </header>
 
-      {/* Main */}
+      {/* Main Content */}
       <main className="min-h-screen">
         {renderCurrentPage()}
       </main>
