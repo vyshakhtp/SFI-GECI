@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Home, FileText, MessageSquare, Image, Users, Settings, Menu, X } from 'lucide-react';
 import HomePage from './components/HomePage';
 import NotesPage from './components/NotesPage';
