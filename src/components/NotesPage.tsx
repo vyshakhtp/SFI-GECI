@@ -60,18 +60,13 @@ const NotesPage = () => {
     }
   };
 
-  const handleDownload = async (noteId: string, fileName: string) => {
-    try {
-      window.open(`http://localhost:5000/api/notes/${noteId}/download`, '_blank');
-    } catch (error) {
-      console.error('Download failed:', error);
-    }
+  const handleDownload = (noteId: string) => {
+    window.open(`http://localhost:5000/api/notes/${noteId}/download`, '_blank');
   };
 
   const handleViewNote = (noteId: string) => {
-  // Open PDF in new tab
-  window.open(`http://localhost:5000/api/notes/${noteId}/view`, '_blank');
-};
+    window.open(`http://localhost:5000/api/notes/${noteId}/view`, '_blank');
+  };
 
 
 
@@ -201,13 +196,13 @@ const NotesPage = () => {
                     {/* Action Buttons */}
                     <div className="flex space-x-3">
                       <button 
-                        onClick={() => handleDownload(note._id, note.fileName)}
+                        onClick={() => handleDownload(note._id)}
                         className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors duration-200 flex items-center justify-center space-x-2"
                       >
                         <Download size={16} />
                         <span>Download</span>
                       </button>
-                      <button   onClick={() => handleViewNote(note._id)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                      <button onClick={() => handleViewNote(note._id)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center justify-center">
                         <BookOpen size={16} />
                       </button>
                     </div>

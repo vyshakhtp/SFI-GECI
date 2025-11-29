@@ -16,17 +16,9 @@ function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, logout, loading, isAuthenticated } = useAuth();
 
-
-
-  // Handle login success - SIMPLIFIED
+  // Handle login success
   const handleLoginSuccess = () => {
-    // Force a re-render by updating state
-    setTimeout(() => {
-      // If still not showing dashboard, force redirect
-      if (isAuthenticated && currentPage !== 'admin') {
-        setCurrentPage('admin');
-      }
-    }, 100);
+    setCurrentPage('admin');
   };
 
   // Handle logout

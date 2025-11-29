@@ -25,7 +25,6 @@ const UploadNoteModal: React.FC<UploadNoteModalProps> = ({ isOpen, onClose, onUp
   const departments = ['Computer Science', 'Mathematics', 'Physics', 'Chemistry', 'Electronics', 'Civil', 'Mechanical'];
   const subjects = ['Data Structures', 'Algorithms', 'Calculus', 'Linear Algebra', 'Digital Electronics', 'Programming'];
   const semesters = ['1', '2', '3', '4', '5', '6', '7', '8'];
-  const noteTypes = ['notes', 'Complete Notes', 'Chapter Notes', 'Quick Reference', 'Previous Papers', 'Summary Notes'];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -55,34 +54,25 @@ const UploadNoteModal: React.FC<UploadNoteModalProps> = ({ isOpen, onClose, onUp
 
     try {
       const token = localStorage.getItem('token');
-      console.log('🔐 Token from localStorage:', token);
 
       if (!token) {
         throw new Error('Please log in again. Token missing.');
       }
 
       // Test the token first
-      console.log('🧪 Testing token...');
       const testResponse = await fetch('http://localhost:5000/api/auth/me', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
-
-      console.log('🔍 Token test response status:', testResponse.status);
       
       if (!testResponse.ok) {
         const errorData = await testResponse.json().catch(() => ({}));
-        console.error('❌ Token test failed:', errorData);
         throw new Error(`Authentication failed: ${testResponse.status} - ${errorData.message || 'Please log in again'}`);
       }
 
-      const userData = await testResponse.json();
-      console.log('✅ Token is valid. User:', userData.user);
-
-      // Now proceed with upload
-      console.log('📤 Starting file upload...');
+      // Prepare form data for upload
       const formDataToSend = new FormData();
       formDataToSend.append('file', file);
       formDataToSend.append('title', formData.title);
@@ -93,11 +83,6 @@ const UploadNoteModal: React.FC<UploadNoteModalProps> = ({ isOpen, onClose, onUp
       formDataToSend.append('description', formData.description);
       formDataToSend.append('tags', formData.tags);
 
-      console.log('📝 Form data prepared');
-      for (let [key, value] of formDataToSend.entries()) {
-        console.log(`  ${key}:`, value);
-      }
-
       const response = await fetch('http://localhost:5000/api/notes', {
         method: 'POST',
         headers: {
@@ -106,24 +91,19 @@ const UploadNoteModal: React.FC<UploadNoteModalProps> = ({ isOpen, onClose, onUp
         body: formDataToSend,
       });
 
-      console.log('📨 Upload response status:', response.status);
-
       if (!response.ok) {
         let errorMessage = `Upload failed: ${response.status} ${response.statusText}`;
         try {
           const errorData = await response.json();
           errorMessage = errorData.message || errorMessage;
-          console.error('❌ Upload error details:', errorData);
         } catch (parseError) {
           const errorText = await response.text();
-          console.error('❌ Upload error text:', errorText);
           errorMessage = errorText || errorMessage;
         }
         throw new Error(errorMessage);
       }
 
-      const result = await response.json();
-      console.log('✅ Upload successful:', result);
+      await response.json();
 
       onUploadSuccess();
       onClose();
@@ -141,7 +121,6 @@ const UploadNoteModal: React.FC<UploadNoteModalProps> = ({ isOpen, onClose, onUp
       setFile(null);
       
     } catch (err: any) {
-      console.error('💥 Upload error:', err);
       setError(err.message || 'Failed to upload note. Please try again.');
     } finally {
       setIsLoading(false);
