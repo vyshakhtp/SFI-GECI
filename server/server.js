@@ -2,7 +2,6 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
-// import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 
@@ -19,7 +18,6 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-// app.use(helmet());
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173', // ✅ fallback for dev
   credentials: true
@@ -40,12 +38,13 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static('uploads'));
 
 // MongoDB connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/sfi_website', {
+mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
 .then(() => console.log('✅ MongoDB connected successfully'))
 .catch(err => console.error('❌ MongoDB connection error:', err));
+
 
 // ✅ Routes
 app.use('/api/auth', authRoutes);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Home, FileText, MessageSquare, Image, Users, Settings, Menu, X } from 'lucide-react';
 import HomePage from './components/HomePage';
 import NotesPage from './components/NotesPage';
@@ -14,32 +14,62 @@ type Page = 'home' | 'notes' | 'complaints' | 'gallery' | 'members' | 'admin';
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, logout, loading, isAuthenticated } = useAuth();
 
-  const { isAuthenticated, login, logout } = useAuth();
+  // Handle login success
+  const handleLoginSuccess = () => {
+    setCurrentPage('admin');
+  };
 
-  // ✅ navigation buttons
+  // Handle logout
+  const handleLogout = async () => {
+    await logout();
+    setCurrentPage('home');
+  };
+
+  // Show loading spinner while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Navigation buttons
   const navigation = [
-    { id: 'home', label: 'Home', icon: Home },
-    { id: 'notes', label: 'Notes', icon: FileText },
-    { id: 'complaints', label: 'Complaints', icon: MessageSquare },
-    { id: 'gallery', label: 'Gallery', icon: Image },
-    { id: 'members', label: 'Members', icon: Users },
-    { id: 'admin', label: 'Admin', icon: Settings },
+    { id: 'home' as Page, label: 'Home', icon: Home },
+    { id: 'notes' as Page, label: 'Notes', icon: FileText },
+    { id: 'complaints' as Page, label: 'Complaints', icon: MessageSquare },
+    { id: 'gallery' as Page, label: 'Gallery', icon: Image },
+    { id: 'members' as Page, label: 'Members', icon: Users },
+    { id: 'admin' as Page, label: isAuthenticated ? 'Dashboard' : 'Admin', icon: Settings },
   ];
 
-  // ✅ render the current page
+  // Render the current page
   const renderCurrentPage = () => {
     switch (currentPage) {
-      case 'home': return <HomePage />;
-      case 'notes': return <NotesPage />;
-      case 'complaints': return <ComplaintsPage />;
-      case 'gallery': return <GalleryPage />;
-      case 'members': return <MembersPage />;
+      case 'home': 
+        return <HomePage />;
+      case 'notes': 
+        return <NotesPage />;
+      case 'complaints': 
+        return <ComplaintsPage />;
+      case 'gallery': 
+        return <GalleryPage />;
+      case 'members': 
+        return <MembersPage />;
       case 'admin':
-        return isAuthenticated
-          ? <AdminDashboard onLogout={logout} />
-          : <AdminLogin onLogin={login} />;
-      default: return <HomePage />;
+        if (isAuthenticated) {
+          return <AdminDashboard onLogout={handleLogout} />;
+        } else {
+          return <AdminLogin onLogin={handleLoginSuccess} />;
+        }
+      default: 
+        return <HomePage />;
     }
   };
 
@@ -68,11 +98,7 @@ function App() {
                 <button
                   key={item.id}
                   onClick={() => {
-                    if (item.id === 'admin') {
-                      setCurrentPage('admin');
-                    } else {
-                      setCurrentPage(item.id as Page);
-                    }
+                    setCurrentPage(item.id);
                     setIsMenuOpen(false);
                   }}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors duration-200 ${
@@ -86,6 +112,15 @@ function App() {
                 </button>
               ))}
             </nav>
+
+            {/* Show user info if authenticated */}
+            {isAuthenticated && user && (
+              <div className="hidden md:flex items-center space-x-4">
+                <span className="text-red-100 text-sm">
+                  Welcome, {user.username} ({user.role})
+                </span>
+              </div>
+            )}
 
             {/* Mobile Nav Toggle */}
             <button
@@ -103,7 +138,10 @@ function App() {
                 {navigation.map((item) => (
                   <button
                     key={item.id}
-                    onClick={() => { setCurrentPage(item.id as Page); setIsMenuOpen(false); }}
+                    onClick={() => { 
+                      setCurrentPage(item.id); 
+                      setIsMenuOpen(false); 
+                    }}
                     className={`flex items-center space-x-3 px-6 py-3 border-b border-red-500 transition-colors duration-200 ${
                       currentPage === item.id
                         ? 'bg-red-700 text-white'
@@ -120,7 +158,7 @@ function App() {
         </div>
       </header>
 
-      {/* Main */}
+      {/* Main Content */}
       <main className="min-h-screen">
         {renderCurrentPage()}
       </main>

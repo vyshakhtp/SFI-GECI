@@ -1,86 +1,80 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Download, BookOpen, Filter, Calendar, FileText, Star } from 'lucide-react';
+
+interface Note {
+  _id: string;
+  title: string;
+  subject: string;
+  semester: string;
+  department: string;
+  type: string;
+  downloads: number;
+  createdAt: string;
+  description: string;
+  fileUrl: string;
+  fileName: string;
+}
 
 const NotesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('all');
   const [selectedSemester, setSelectedSemester] = useState('all');
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [subjects, setSubjects] = useState<string[]>([]);
+  const [semesters, setSemesters] = useState<string[]>([]);
 
-  const subjects = ['Mathematics', 'Physics', 'Chemistry', 'Computer Science', 'English', 'History'];
-  const semesters = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
+  // Fetch notes from API
+  useEffect(() => {
+    fetchNotes();
+    fetchMetadata();
+  }, []);
 
-  const notes = [
-    {
-      id: 1,
-      title: 'Data Structures and Algorithms',
-      subject: 'Computer Science',
-      semester: '3rd',
-      type: 'Complete Notes',
-      downloads: 234,
-      rating: 4.8,
-      uploadDate: '2024-12-15',
-      size: '2.3 MB'
-    },
-    {
-      id: 2,
-      title: 'Calculus - Differential Equations',
-      subject: 'Mathematics',
-      semester: '2nd',
-      type: 'Chapter Notes',
-      downloads: 189,
-      rating: 4.6,
-      uploadDate: '2024-12-10',
-      size: '1.8 MB'
-    },
-    {
-      id: 3,
-      title: 'Organic Chemistry Reactions',
-      subject: 'Chemistry',
-      semester: '4th',
-      type: 'Quick Reference',
-      downloads: 156,
-      rating: 4.7,
-      uploadDate: '2024-12-08',
-      size: '3.1 MB'
-    },
-    {
-      id: 4,
-      title: 'Thermodynamics Laws',
-      subject: 'Physics',
-      semester: '2nd',
-      type: 'Complete Notes',
-      downloads: 298,
-      rating: 4.9,
-      uploadDate: '2024-12-05',
-      size: '2.7 MB'
-    },
-    {
-      id: 5,
-      title: 'Database Management Systems',
-      subject: 'Computer Science',
-      semester: '5th',
-      type: 'Complete Notes',
-      downloads: 267,
-      rating: 4.8,
-      uploadDate: '2024-12-01',
-      size: '4.2 MB'
-    },
-    {
-      id: 6,
-      title: 'Modern Indian History',
-      subject: 'History',
-      semester: '1st',
-      type: 'Summary Notes',
-      downloads: 123,
-      rating: 4.5,
-      uploadDate: '2024-11-28',
-      size: '1.5 MB'
+  const fetchNotes = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('http://localhost:5000/api/notes?limit=50');
+      const data = await response.json();
+      setNotes(data.notes || []);
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
+
+  const fetchMetadata = async () => {
+    try {
+      const [subjectsRes, semestersRes] = await Promise.all([
+        fetch('http://localhost:5000/api/notes/meta/subjects'),
+        fetch('http://localhost:5000/api/notes/meta/semesters')
+      ]);
+      
+      const subjectsData = await subjectsRes.json();
+      const semestersData = await semestersRes.json();
+      
+      setSubjects(subjectsData || []);
+      setSemesters(semestersData || []);
+    } catch (error) {
+      console.error('Error fetching metadata:', error);
+    }
+  };
+
+  const handleDownload = (noteId: string) => {
+    window.open(`http://localhost:5000/api/notes/${noteId}/download`, '_blank');
+  };
+
+  const handleViewNote = (noteId: string) => {
+    window.open(`http://localhost:5000/api/notes/${noteId}/view`, '_blank');
+  };
+
+
+
 
   const filteredNotes = notes.filter(note => {
     const matchesSearch = note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         note.subject.toLowerCase().includes(searchTerm.toLowerCase());
+                         note.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (note.description && note.description.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesSubject = selectedSubject === 'all' || note.subject === selectedSubject;
     const matchesSemester = selectedSemester === 'all' || note.semester === selectedSemester;
     
@@ -106,7 +100,7 @@ const NotesPage = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
               <input
                 type="text"
-                placeholder="Search notes by title or subject..."
+                placeholder="Search notes by title, subject, or description..."
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -152,65 +146,89 @@ const NotesPage = () => {
           </p>
         </div>
 
-        {/* Notes Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredNotes.map(note => (
-            <div key={note.id} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
-              <div className="p-6">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                      <FileText className="text-red-600" size={24} />
-                    </div>
-                    <div>
-                      <span className="text-xs text-red-600 font-semibold bg-red-50 px-2 py-1 rounded-full">
-                        {note.semester} SEM
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Star className="text-yellow-400 fill-current" size={16} />
-                    <span className="text-sm font-medium text-gray-600">{note.rating}</span>
-                  </div>
-                </div>
-
-                {/* Content */}
-                <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">{note.title}</h3>
-                <p className="text-red-600 font-medium text-sm mb-1">{note.subject}</p>
-                <p className="text-gray-500 text-sm mb-4">{note.type}</p>
-
-                {/* Stats */}
-                <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                  <div className="flex items-center space-x-4">
-                    <span>{note.downloads} downloads</span>
-                    <span>{note.size}</span>
-                  </div>
-                  <span>{new Date(note.uploadDate).toLocaleDateString()}</span>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex space-x-3">
-                  <button className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors duration-200 flex items-center justify-center space-x-2">
-                    <Download size={16} />
-                    <span>Download</span>
-                  </button>
-                  <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-                    <BookOpen size={16} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* No Results */}
-        {filteredNotes.length === 0 && (
-          <div className="text-center py-12">
-            <FileText className="mx-auto text-gray-400 mb-4" size={64} />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No notes found</h3>
-            <p className="text-gray-600">Try adjusting your search or filter criteria</p>
+        {/* Loading State */}
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
           </div>
+        ) : (
+          <>
+            {/* Notes Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredNotes.map(note => (
+                <div key={note._id} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                  <div className="p-6">
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                          <FileText className="text-red-600" size={24} />
+                        </div>
+                      
+                      </div>
+                       <div>
+                          <span className="text-xs text-red-600 font-semibold bg-red-50 px-2 py-1 rounded-full">
+                            {note.semester} SEM
+                          </span>
+                        </div>
+                    </div>
+
+                    {/* Content */}
+                    <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">{note.title}</h3>
+                    <p className="text-red-600 font-medium text-sm mb-1">{note.subject}</p>
+                    <p className="text-gray-500 text-sm mb-4">{note.type}</p>
+
+                    {/* Description */}
+                    {note.description && (
+                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                        {note.description}
+                      </p>
+                    )}
+
+                    {/* Stats */}
+                    <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+                      <div className="flex items-center space-x-4">
+                        <span>{note.downloads} downloads</span>
+                      </div>
+                      <span>{new Date(note.createdAt).toLocaleDateString()}</span>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex space-x-3">
+                      <button 
+                        onClick={() => handleDownload(note._id)}
+                        className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors duration-200 flex items-center justify-center space-x-2"
+                      >
+                        <Download size={16} />
+                        <span>Download</span>
+                      </button>
+                      <button onClick={() => handleViewNote(note._id)} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center justify-center">
+                        <BookOpen size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* No Results */}
+            {filteredNotes.length === 0 && notes.length > 0 && (
+              <div className="text-center py-12">
+                <FileText className="mx-auto text-gray-400 mb-4" size={64} />
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No notes found</h3>
+                <p className="text-gray-600">Try adjusting your search or filter criteria</p>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {notes.length === 0 && (
+              <div className="text-center py-12">
+                <FileText className="mx-auto text-gray-400 mb-4" size={64} />
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No notes available yet</h3>
+                <p className="text-gray-600">Check back later for study materials</p>
+              </div>
+            )}
+          </>
         )}
 
         {/* Upload Request */}
