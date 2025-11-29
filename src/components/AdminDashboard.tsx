@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../hooks/useAuth.jsx';
 import { 
   BarChart3, 
   FileText, 
@@ -7,7 +7,6 @@ import {
   Image, 
   Bell, 
   Users, 
-  Upload, 
   Download, 
   Eye, 
   Trash2, 
@@ -96,38 +95,36 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   };
 
   const handleViewNote = (noteId: string) => {
-  // Open PDF in new tab
-  window.open(`http://localhost:5000/api/notes/${noteId}/view`, '_blank');
-};
+    window.open(`http://localhost:5000/api/notes/${noteId}/view`, '_blank');
+  };
 
-const handleDeleteNote = async (noteId: string) => {
-  if (!window.confirm('Are you sure you want to delete this note? This action cannot be undone.')) {
-    return;
-  }
-
-  try {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`http://localhost:5000/api/notes/${noteId}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (response.ok) {
-      // Remove note from state
-      setNotes(prevNotes => prevNotes.filter(note => note._id !== noteId));
-      alert('Note deleted successfully');
-    } else {
-      const errorData = await response.json();
-      alert('Failed to delete note: ' + (errorData.message || 'Unknown error'));
+  const handleDeleteNote = async (noteId: string) => {
+    if (!window.confirm('Are you sure you want to delete this note? This action cannot be undone.')) {
+      return;
     }
-  } catch (error) {
-    console.error('Error deleting note:', error);
-    alert('Error deleting note. Please try again.');
-  }
-};
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/notes/${noteId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        setNotes(prevNotes => prevNotes.filter(note => note._id !== noteId));
+        alert('Note deleted successfully');
+      } else {
+        const errorData = await response.json();
+        alert('Failed to delete note: ' + (errorData.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error deleting note:', error);
+      alert('Error deleting note. Please try again.');
+    }
+  };
 
   // Filter notes based on search and filters
   const filteredNotes = notes.filter(note => {
@@ -309,7 +306,6 @@ const handleDeleteNote = async (noteId: string) => {
                         <a
                           href={`http://localhost:5000/api/notes/${note._id}/download`}
                           className="text-green-600 hover:text-green-900"
-                        
                           title="Download Note"
                         >
                           <Download size={16} />
@@ -447,7 +443,7 @@ const handleDeleteNote = async (noteId: string) => {
               </div>
             </div>
             
-<div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4">
   <div className="flex items-center space-x-2">
     <Calendar size={16} className="text-gray-400" />
     <span className="text-sm text-gray-600">{new Date().toLocaleDateString()}</span>
@@ -461,8 +457,8 @@ const handleDeleteNote = async (noteId: string) => {
   >
     <LogOut size={16} />
     <span>Logout</span>
-  </button>
-</div>
+            </button>
+            </div>
           </div>
         </div>
       </header>
